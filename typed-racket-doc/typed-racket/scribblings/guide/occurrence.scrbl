@@ -6,8 +6,7 @@
 
 @(define the-eval (make-base-eval))
 @(the-eval '(require typed/racket))
-@(define the-eval* (make-base-eval))
-@(the-eval* '(require typed/racket))
+@(define the-eval* #f)
 
 @title[#:tag "occurrence-typing"]{Occurrence Typing}
 
@@ -90,10 +89,28 @@ that allow the type system to reason logically about predicate checks.
 
 While propositions are provided for all built-in type predicates,
 we may want to provide propositions for our own predicates as well.
-For instance, consider the following predicate,
-which determines whether a given list contains only strings.
-Intuitively, a value that satisfies the predicate must have type
-@racket[(Listof String)].
+For instance, consider the following @racket[main] function, which successfully type-checks,
+because @racket[(andmap string? lst)] provides a proposition that allows Typed Racket to narrow
+the type for @racket[lst] from @racket[(Listof Any)] to @racket[(Listof String)] in the branch.
+
+@(set! the-eval* (make-base-eval))
+@(the-eval* '(require typed/racket))
+
+@examples[#:label #f #:eval the-eval*
+  (: main (-> (Listof Any) String))
+  (define (main lst)
+    (cond
+      [(andmap string? lst) (first lst)]
+      [else "not a list of strings"]))
+]
+
+@(close-eval the-eval*)
+
+We may want to refactor the program by creating a predicate
+@racket[listof-string?], which determines whether a given list contains only strings.
+
+@(set! the-eval* (make-base-eval))
+@(the-eval* '(require typed/racket))
 
 @examples[#:no-result #:eval the-eval*
   (: listof-string? (-> (Listof Any) Boolean))
@@ -101,7 +118,7 @@ Intuitively, a value that satisfies the predicate must have type
     (andmap string? lst))
 ]
 
-We then may wish to use this predicate to narrow a type in our main program:
+Then we use the predicate in @racket[main].
 
 @examples[#:label #f #:eval the-eval*
   (: main (-> (Listof Any) String))
@@ -111,7 +128,9 @@ We then may wish to use this predicate to narrow a type in our main program:
                   [else "not a list of strings"])))
 ]
 
-Unfortunately, Typed Racket fails to narrow the type, because we did not specify
+@(close-eval the-eval*)
+
+Unfortunately, Typed Racket now fails to narrow the type, because we did not specify
 a proposition for @racket[listof-string?]. To fix this issue, we include
 the proposition in the @racket[->] form for @racket[listof-string].
 
@@ -121,7 +140,7 @@ the proposition in the @racket[->] form for @racket[listof-string].
     (andmap string? lst))
 ]
 
-With the proposition, Typed Racket successfully type-checks our main program.
+With the proposition, Typed Racket successfully type-checks the @racket[main] function.
 
 @examples[#:label #f #:eval the-eval
   (: main (-> (Listof Any) String))
